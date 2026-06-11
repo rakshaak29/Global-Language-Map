@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_map_marker_cluster/flutter_map_marker_cluster.dart';
+import 'package:global_language_distribution_map/app/router.dart';
 import 'package:global_language_distribution_map/data/models/language.dart';
 import 'package:global_language_distribution_map/features/map/presentation/utils/map_tile_config.dart';
 import 'package:global_language_distribution_map/features/map/presentation/utils/marker_builder.dart';
@@ -9,6 +10,7 @@ import 'package:global_language_distribution_map/features/map/presentation/widge
 import 'package:global_language_distribution_map/features/map/presentation/widgets/map_search_bar.dart';
 import 'package:global_language_distribution_map/app/theme.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:go_router/go_router.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:provider/provider.dart';
 
@@ -267,6 +269,16 @@ class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
                             : Icons.filter_alt_outlined,
                         isActive: viewModel.endangermentFilter != 'all',
                         onPressed: () => _showFilterSheet(context, viewModel),
+                      ),
+
+                      const SizedBox(width: 8),
+
+                      // KML Export button
+                      _buildControlButton(
+                        context,
+                        icon: Icons.file_download_outlined,
+                        isActive: false,
+                        onPressed: () => context.push(RoutePaths.kmlExport),
                       ),
 
                       const SizedBox(width: 8),

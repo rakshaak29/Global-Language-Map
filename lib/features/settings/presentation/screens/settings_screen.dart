@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:global_language_distribution_map/app/router.dart';
 import 'package:global_language_distribution_map/core/constants/app_constants.dart';
 import 'package:global_language_distribution_map/features/settings/presentation/view_models/settings_view_model.dart';
+import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 
@@ -60,6 +62,45 @@ class SettingsScreen extends StatelessWidget {
                   onChanged: (value) {
                     viewModel.toggleTheme();
                   },
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 16),
+
+          // Section: Liquid Galaxy
+          _buildSectionHeader(context, 'Liquid Galaxy'),
+          Card(
+            child: Column(
+              children: [
+                ListTile(
+                  onTap: () => context.push(RoutePaths.kmlExport),
+                  leading: Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: colorScheme.secondary.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Icon(
+                      Icons.public_rounded,
+                      color: colorScheme.secondary,
+                    ),
+                  ),
+                  title: Text(
+                    'Export KML',
+                    style: GoogleFonts.inter(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  subtitle: Text(
+                    'Generate KML files for Google Earth',
+                    style: GoogleFonts.inter(fontSize: 12),
+                  ),
+                  trailing: Icon(
+                    Icons.chevron_right_rounded,
+                    color: colorScheme.onSurfaceVariant,
+                  ),
                 ),
               ],
             ),

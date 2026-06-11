@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:global_language_distribution_map/features/home/presentation/screens/home_screen.dart';
+import 'package:global_language_distribution_map/features/kml_export/presentation/screens/kml_export_screen.dart';
 import 'package:global_language_distribution_map/features/map/presentation/screens/map_screen.dart';
 import 'package:global_language_distribution_map/features/settings/presentation/screens/settings_screen.dart';
 import 'package:global_language_distribution_map/features/splash/presentation/screens/splash_screen.dart';
@@ -13,6 +14,7 @@ class RouteNames {
   static const String home = 'home';
   static const String map = 'map';
   static const String settings = 'settings';
+  static const String kmlExport = 'kml-export';
 }
 
 /// Application route paths.
@@ -23,6 +25,7 @@ class RoutePaths {
   static const String home = '/home';
   static const String map = '/map';
   static const String settings = '/settings';
+  static const String kmlExport = '/kml-export';
 }
 
 /// The main shell with bottom navigation.
@@ -74,6 +77,11 @@ GoRouter createRouter() {
         path: RoutePaths.splash,
         name: RouteNames.splash,
         builder: (context, state) => const SplashScreen(),
+      ),
+      GoRoute(
+        path: RoutePaths.kmlExport,
+        name: RouteNames.kmlExport,
+        builder: (context, state) => const KmlExportScreen(),
       ),
       StatefulShellRoute.indexedStack(
         builder: (context, state, navigationShell) {
