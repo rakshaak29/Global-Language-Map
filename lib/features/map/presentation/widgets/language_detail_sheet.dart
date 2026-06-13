@@ -16,11 +16,13 @@ import 'package:google_fonts/google_fonts.dart';
 class LanguageDetailSheet extends StatelessWidget {
   final Language language;
   final VoidCallback? onClose;
+  final VoidCallback? onFlyTo;
 
   const LanguageDetailSheet({
     super.key,
     required this.language,
     this.onClose,
+    this.onFlyTo,
   });
 
   @override
@@ -193,6 +195,9 @@ class LanguageDetailSheet extends StatelessWidget {
                     child: ElevatedButton.icon(
                       onPressed: () async {
                         try {
+                          if (onFlyTo != null) {
+                            onFlyTo!();
+                          }
                           await FlyToService.saveFlyToKml(
                             name: language.name,
                             latitude: language.latitude,

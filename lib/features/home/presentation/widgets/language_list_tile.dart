@@ -3,7 +3,11 @@ import 'package:global_language_distribution_map/app/theme.dart';
 import 'package:global_language_distribution_map/core/constants/app_constants.dart';
 import 'package:global_language_distribution_map/data/models/language.dart';
 import 'package:global_language_distribution_map/data/services/fly_to_service.dart';
+import 'package:global_language_distribution_map/app/router.dart';
+import 'package:global_language_distribution_map/features/map/presentation/view_models/map_view_model.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:go_router/go_router.dart';
+import 'package:provider/provider.dart';
 
 /// A list tile displaying a language's key information.
 class LanguageListTile extends StatelessWidget {
@@ -188,6 +192,11 @@ class LanguageListTile extends StatelessWidget {
                         OutlinedButton.icon(
                           onPressed: () async {
                             try {
+                              // Select the language in MapViewModel
+                              context.read<MapViewModel>().selectLanguage(language);
+                              // Go to Map screen
+                              context.go(RoutePaths.map);
+
                               await FlyToService.saveFlyToKml(
                                 name: language.name,
                                 latitude: language.latitude,

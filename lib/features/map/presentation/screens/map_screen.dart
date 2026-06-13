@@ -36,6 +36,7 @@ class MapScreen extends StatefulWidget {
 
 class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
   final MapController _mapController = MapController();
+  String? _lastAnimatedLanguageId;
 
   @override
   void dispose() {
@@ -79,17 +80,13 @@ class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
 
   void _onMarkerTapped(Language language) {
     final viewModel = context.read<MapViewModel>();
-    final position = viewModel.selectLanguage(language);
-    if (position != null) {
-      _animatedMove(position, _mapController.camera.zoom.clamp(6, 12));
-    }
+    viewModel.selectLanguage(language);
   }
 
   void _onSearchLanguageSelected(Language language) {
     final viewModel = context.read<MapViewModel>();
     viewModel.selectLanguage(language);
     viewModel.closeSearch();
-    _animatedMove(LatLng(language.latitude, language.longitude), 8);
   }
 
   @override
@@ -98,6 +95,16 @@ class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
     final colorScheme = theme.colorScheme;
     final isDark = theme.brightness == Brightness.dark;
     final viewModel = context.watch<MapViewModel>();
+
+    final selected = viewModel.selectedLanguage;
+    if (selected != null && selected.id != _lastAnimatedLanguageId) {
+      _lastAnimatedLanguageId = selected.id;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _animatedMove(LatLng(selected.latitude, selected.longitude), 12);
+      });
+    } else if (selected == null) {
+      _lastAnimatedLanguageId = null;
+    }
 
     if (viewModel.isLoading) {
       return Scaffold(
@@ -317,6 +324,10 @@ class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
               child: LanguageDetailSheet(
                 language: viewModel.selectedLanguage!,
                 onClose: viewModel.clearSelection,
+                onFlyTo: () {
+                  final lang = viewModel.selectedLanguage!;
+                  _animatedMove(LatLng(lang.latitude, lang.longitude), 12);
+                },
               ),
             ),
         ],
