@@ -1,3 +1,4 @@
+import 'dart:math';
 import 'package:global_language_distribution_map/data/models/language.dart';
 import 'package:xml/xml.dart';
 
@@ -95,8 +96,10 @@ class KmlService {
         });
         builder.element('open', nest: '1');
 
-        // Generate styles for each endangerment level
-        _buildStyles(builder);
+        // Generate individual styles for each language in the document
+        for (final lang in validLanguages) {
+          _buildIndividualStyle(builder, lang);
+        }
 
         // Generate folders grouped by endangerment status
         // Order: not endangered first, extinct last
@@ -139,7 +142,12 @@ class KmlService {
         namespace: _kmlNamespace, nest: () {
       builder.element('Document', nest: () {
         builder.element('name', nest: language.name);
-        _buildStyles(builder);
+        _buildLookAt(
+          builder,
+          latitude: language.latitude,
+          longitude: language.longitude,
+        );
+        _buildIndividualStyle(builder, language);
         _buildPlacemark(builder, language);
       });
     });
@@ -184,34 +192,86 @@ class KmlService {
 
   // ─── Private Builders ───────────────────────────────────────────────────────
 
-  /// Build <Style> elements for all endangerment levels.
-  static void _buildStyles(XmlBuilder builder) {
-    for (final entry in _endangermentKmlColors.entries) {
-      final styleId = _statusToStyleId(entry.key);
-      builder.element('Style', attributes: {'id': styleId}, nest: () {
-        builder.element('IconStyle', nest: () {
-          builder.element('color', nest: entry.value);
-          builder.element('scale', nest: '1.0');
-          builder.element('Icon', nest: () {
-            builder.element('href', nest: () {
-              builder.text(
-                  'http://maps.google.com/mapfiles/kml/shapes/shaded_dot.png');
-            });
-          });
-        });
-        builder.element('LabelStyle', nest: () {
-          builder.element('color', nest: entry.value);
-          builder.element('scale', nest: '0.8');
-        });
-        builder.element('BalloonStyle', nest: () {
-          builder.element('text', nest: () {
-            builder.cdata(
-              '<h3>\$[name]</h3>\$[description]',
-            );
+  /// Build a dynamic `<Style>` element for a specific language.
+  static void _buildIndividualStyle(XmlBuilder builder, Language language) {
+    final styleId = 'style-${language.id}';
+    final endangermentColor = _endangermentKmlColors[language.endangeredStatus] ?? 'ff50af4c';
+    final uniqueColor = _stringToKmlColor(language.id);
+    final borderColor = uniqueColor.replaceAll(RegExp(r'^..'), 'ff'); // solid border
+
+    builder.element('Style', attributes: {'id': styleId}, nest: () {
+      builder.element('IconStyle', nest: () {
+        builder.element('color', nest: endangermentColor);
+        builder.element('scale', nest: '1.0');
+        builder.element('Icon', nest: () {
+          builder.element('href', nest: () {
+            builder.text(
+                'http://maps.google.com/mapfiles/kml/shapes/shaded_dot.png');
           });
         });
       });
+      builder.element('LabelStyle', nest: () {
+        builder.element('color', nest: endangermentColor);
+        builder.element('scale', nest: '0.8');
+      });
+      builder.element('LineStyle', nest: () {
+        builder.element('color', nest: borderColor);
+        builder.element('width', nest: '2');
+      });
+      builder.element('PolyStyle', nest: () {
+        builder.element('color', nest: uniqueColor);
+        builder.element('fill', nest: '1');
+        builder.element('outline', nest: '1');
+      });
+      builder.element('BalloonStyle', nest: () {
+        builder.element('text', nest: () {
+          builder.cdata(
+            '<h3>\$[name]</h3>\$[description]',
+          );
+        });
+      });
+    });
+  }
+
+  /// Generate a unique semi-transparent KML color code from a string.
+  static String _stringToKmlColor(String str) {
+    int hash = 0;
+    for (int i = 0; i < str.length; i++) {
+      hash = str.codeUnitAt(i) + ((hash << 5) - hash);
     }
+    final r = (hash & 0xFF0000) >> 16;
+    final g = (hash & 0x00FF00) >> 8;
+    final b = (hash & 0x0000FF);
+    final rHex = r.toRadixString(16).padLeft(2, '0');
+    final gHex = g.toRadixString(16).padLeft(2, '0');
+    final bHex = b.toRadixString(16).padLeft(2, '0');
+    return '50$bHex$gHex$rHex'; // ~30% opacity unique color
+  }
+
+  /// Generates a list of coordinates forming a circle around the center point.
+  static List<String> _generateCircleCoordinates(double lat, double lng, {double radius = 40000.0}) {
+    final coords = <String>[];
+    const segments = 36;
+    const earthRadius = 6378137.0;
+
+    final latRad = lat * pi / 180;
+    final lngRad = lng * pi / 180;
+    final distanceRad = radius / earthRadius;
+
+    for (int i = 0; i <= segments; i++) {
+      final bearingRad = (i * 360 / segments) * pi / 180;
+
+      final destLatRad = asin(sin(latRad) * cos(distanceRad) +
+          cos(latRad) * sin(distanceRad) * cos(bearingRad));
+      final destLngRad = lngRad +
+          atan2(sin(bearingRad) * sin(distanceRad) * cos(latRad),
+              cos(distanceRad) - sin(latRad) * sin(destLatRad));
+
+      final destLat = destLatRad * 180 / pi;
+      final destLng = destLngRad * 180 / pi;
+      coords.add('${destLng.toStringAsFixed(6)},${destLat.toStringAsFixed(6)},0');
+    }
+    return coords;
   }
 
   /// Build a `<Folder>` containing placemarks for a given endangerment status.
@@ -235,7 +295,7 @@ class KmlService {
   static void _buildPlacemark(XmlBuilder builder, Language language) {
     final label = _endangermentLabels[language.endangeredStatus] ??
         language.endangeredStatus;
-    final styleId = _statusToStyleId(language.endangeredStatus);
+    final styleId = 'style-${language.id}';
 
     builder.element('Placemark', nest: () {
       builder.element('name', nest: language.name);
@@ -251,11 +311,24 @@ class KmlService {
       });
       builder.element('styleUrl', nest: '#$styleId');
 
-      // Point coordinates (KML format: longitude,latitude,altitude)
-      builder.element('Point', nest: () {
-        builder.element('coordinates', nest: () {
-          builder.text(
-              '${language.longitude},${language.latitude},0');
+      builder.element('MultiGeometry', nest: () {
+        // 1. Point for the map pin
+        builder.element('Point', nest: () {
+          builder.element('coordinates', nest: () {
+            builder.text('${language.longitude},${language.latitude},0');
+          });
+        });
+
+        // 2. Polygon Circle for highlighting the region spoken
+        final circleCoords = _generateCircleCoordinates(language.latitude, language.longitude);
+        builder.element('Polygon', nest: () {
+          builder.element('outerBoundaryIs', nest: () {
+            builder.element('LinearRing', nest: () {
+              builder.element('coordinates', nest: () {
+                builder.text(circleCoords.join('\n'));
+              });
+            });
+          });
         });
       });
 
@@ -290,11 +363,6 @@ class KmlService {
   }
 
   // ─── Utilities ──────────────────────────────────────────────────────────────
-
-  /// Convert an endangerment status string to a KML style ID.
-  static String _statusToStyleId(String status) {
-    return 'style-${status.replaceAll(' ', '-')}';
-  }
 
   /// Escape HTML special characters for CDATA content.
   static String _escapeHtml(String text) {
