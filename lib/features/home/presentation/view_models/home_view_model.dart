@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:global_language_distribution_map/core/utils/debouncer.dart';
 import 'package:global_language_distribution_map/data/models/language.dart';
 import 'package:global_language_distribution_map/data/repositories/language_repository.dart';
+import 'package:global_language_distribution_map/data/services/fly_to_service.dart';
 
 /// ViewModel for the Home screen.
 ///
@@ -14,6 +15,7 @@ class HomeViewModel extends ChangeNotifier {
   String _searchQuery = '';
   String _selectedEndangerment = 'all';
   Language? _selectedLanguage;
+  String? _currentFlyToKml;
   bool _isSearching = false;
 
   HomeViewModel({required LanguageRepository repository})
@@ -27,6 +29,7 @@ class HomeViewModel extends ChangeNotifier {
   String get searchQuery => _searchQuery;
   String get selectedEndangerment => _selectedEndangerment;
   Language? get selectedLanguage => _selectedLanguage;
+  String? get currentFlyToKml => _currentFlyToKml;
   bool get isSearching => _isSearching;
 
   int get totalCount => _repository.totalCount;
@@ -69,6 +72,14 @@ class HomeViewModel extends ChangeNotifier {
   /// Select a language to view details.
   void selectLanguage(Language? language) {
     _selectedLanguage = language;
+    if (language != null) {
+      _currentFlyToKml = FlyToService.generateFlyToKml(
+        latitude: language.latitude,
+        longitude: language.longitude,
+      );
+    } else {
+      _currentFlyToKml = null;
+    }
     notifyListeners();
   }
 

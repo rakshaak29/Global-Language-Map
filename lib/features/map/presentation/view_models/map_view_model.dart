@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:global_language_distribution_map/data/models/language.dart';
 import 'package:global_language_distribution_map/data/repositories/language_repository.dart';
+import 'package:global_language_distribution_map/data/services/fly_to_service.dart';
 import 'package:latlong2/latlong.dart';
 
 /// ViewModel for the Map screen.
@@ -39,6 +40,7 @@ class MapViewModel extends ChangeNotifier {
   double _zoomLevel = 2.5;
   String _endangermentFilter = 'all';
   String _familyFilter = 'all';
+  String? _currentFlyToKml;
 
   // Debounce timer for search
   Timer? _searchDebounce;
@@ -54,6 +56,9 @@ class MapViewModel extends ChangeNotifier {
 
   /// The currently selected language (tapped marker).
   Language? get selectedLanguage => _selectedLanguage;
+
+  /// The generated FlyTo KML snippet for the currently selected language.
+  String? get currentFlyToKml => _currentFlyToKml;
 
   /// Current search query.
   String get searchQuery => _searchQuery;
@@ -165,6 +170,10 @@ class MapViewModel extends ChangeNotifier {
   /// Returns the LatLng for camera animation.
   LatLng? selectLanguage(Language language) {
     _selectedLanguage = language;
+    _currentFlyToKml = FlyToService.generateFlyToKml(
+      latitude: language.latitude,
+      longitude: language.longitude,
+    );
     notifyListeners();
     return LatLng(language.latitude, language.longitude);
   }
@@ -172,6 +181,7 @@ class MapViewModel extends ChangeNotifier {
   /// Clear the selected language.
   void clearSelection() {
     _selectedLanguage = null;
+    _currentFlyToKml = null;
     notifyListeners();
   }
 
