@@ -11,6 +11,7 @@ void main() {
         altitudeRange: 40000,
         tilt: 30,
         heading: 90,
+        name: 'Test Language',
       );
 
       // Verify KML structure
@@ -20,7 +21,8 @@ void main() {
       final kmlElement = doc.rootElement;
       expect(kmlElement.name.local, equals('kml'));
 
-      final lookAt = kmlElement.findElements('LookAt').first;
+      final document = kmlElement.findElements('Document').first;
+      final lookAt = document.findElements('LookAt').first;
       expect(
         lookAt.findElements('latitude').first.innerText,
         equals('35.676200'),
@@ -54,7 +56,8 @@ void main() {
       );
 
       final doc = XmlDocument.parse(kml);
-      final lookAt = doc.rootElement.findElements('LookAt').first;
+      final document = doc.rootElement.findElements('Document').first;
+      final lookAt = document.findElements('LookAt').first;
 
       expect(
         lookAt.findElements('range').first.innerText,

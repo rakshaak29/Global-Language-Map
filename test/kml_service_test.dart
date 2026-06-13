@@ -78,23 +78,20 @@ void main() {
       );
     });
 
-    test('generateKml creates styles for all endangerment levels', () {
+    test('generateKml creates styles for each valid language', () {
       final kml = KmlService.generateKml(sampleLanguages);
       final doc = XmlDocument.parse(kml);
       final document = doc.rootElement.findElements('Document').first;
       final styles = document.findElements('Style');
 
-      // Should have 6 styles (one per endangerment level)
-      expect(styles.length, equals(6));
+      // Should have 3 styles (one per language with coordinates)
+      expect(styles.length, equals(3));
 
       // Verify style IDs
       final styleIds = styles.map((s) => s.getAttribute('id')).toSet();
-      expect(styleIds, contains('style-not-endangered'));
-      expect(styleIds, contains('style-threatened'));
-      expect(styleIds, contains('style-shifting'));
-      expect(styleIds, contains('style-moribund'));
-      expect(styleIds, contains('style-nearly-extinct'));
-      expect(styleIds, contains('style-extinct'));
+      expect(styleIds, contains('style-engl1234'));
+      expect(styleIds, contains('style-ainu1240'));
+      expect(styleIds, contains('style-tasm1234'));
     });
 
     test('generateKml organizes placemarks into folders by status', () {
@@ -142,7 +139,8 @@ void main() {
           .findElements('Folder')
           .first;
       final placemark = folder.findElements('Placemark').first;
-      final coords = placemark
+      final multiGeometry = placemark.findElements('MultiGeometry').first;
+      final coords = multiGeometry
           .findElements('Point')
           .first
           .findElements('coordinates')
@@ -206,7 +204,7 @@ void main() {
       final placemark = folder.findElements('Placemark').first;
       final styleUrl = placemark.findElements('styleUrl').first.innerText;
 
-      expect(styleUrl, equals('#style-not-endangered'));
+      expect(styleUrl, equals('#style-engl1234'));
     });
 
     test('generateSingleLanguageKml creates valid KML for one language', () {

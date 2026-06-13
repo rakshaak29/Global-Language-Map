@@ -173,6 +173,7 @@ class MapViewModel extends ChangeNotifier {
     _currentFlyToKml = FlyToService.generateFlyToKml(
       latitude: language.latitude,
       longitude: language.longitude,
+      name: language.name,
     );
     notifyListeners();
     return LatLng(language.latitude, language.longitude);

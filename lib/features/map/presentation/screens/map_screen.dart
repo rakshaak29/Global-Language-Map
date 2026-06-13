@@ -38,6 +38,28 @@ class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
   final MapController _mapController = MapController();
   String? _lastAnimatedLanguageId;
 
+  Color _stringToFlutterColor(String str) {
+    int hash = 0;
+    for (int i = 0; i < str.length; i++) {
+      hash = str.codeUnitAt(i) + ((hash << 5) - hash);
+    }
+    final r = (hash & 0xFF0000) >> 16;
+    final g = (hash & 0x00FF00) >> 8;
+    final b = (hash & 0x0000FF);
+    return Color.fromARGB(76, r, g, b); // ~30% opacity, matching KML
+  }
+
+  Color _stringToFlutterBorderColor(String str) {
+    int hash = 0;
+    for (int i = 0; i < str.length; i++) {
+      hash = str.codeUnitAt(i) + ((hash << 5) - hash);
+    }
+    final r = (hash & 0xFF0000) >> 16;
+    final g = (hash & 0x00FF00) >> 8;
+    final b = (hash & 0x0000FF);
+    return Color.fromARGB(255, r, g, b); // Solid border
+  }
+
   @override
   void dispose() {
     _mapController.dispose();
@@ -189,6 +211,24 @@ class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
                 maxZoom: 19,
                 retinaMode: true,
               ),
+
+              // Highlight selected language region (circle)
+              if (viewModel.selectedLanguage != null)
+                CircleLayer(
+                  circles: [
+                    CircleMarker(
+                      point: LatLng(
+                        viewModel.selectedLanguage!.latitude,
+                        viewModel.selectedLanguage!.longitude,
+                      ),
+                      radius: 40000.0, // 40km, matching KML
+                      useRadiusInMeter: true,
+                      color: _stringToFlutterColor(viewModel.selectedLanguage!.id),
+                      borderColor: _stringToFlutterBorderColor(viewModel.selectedLanguage!.id),
+                      borderStrokeWidth: 2,
+                    ),
+                  ],
+                ),
 
               // Clustered markers
               MarkerClusterLayerWidget(

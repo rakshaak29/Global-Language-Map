@@ -76,6 +76,7 @@ class HomeViewModel extends ChangeNotifier {
       _currentFlyToKml = FlyToService.generateFlyToKml(
         latitude: language.latitude,
         longitude: language.longitude,
+        name: language.name,
       );
     } else {
       _currentFlyToKml = null;
