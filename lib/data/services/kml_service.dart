@@ -309,8 +309,17 @@ class KmlService {
           '${language.description.isNotEmpty ? '<br/><i>${_escapeHtml(language.description)}</i>' : ''}',
         );
       });
+
+      // LookAt for camera positioning (must come before styleUrl/Geometry in KML schema)
+      _buildLookAt(
+        builder,
+        latitude: language.latitude,
+        longitude: language.longitude,
+      );
+
       builder.element('styleUrl', nest: '#$styleId');
 
+      // Geometry elements (like MultiGeometry) must come last in KML schema
       builder.element('MultiGeometry', nest: () {
         // 1. Point for the map pin
         builder.element('Point', nest: () {
@@ -331,13 +340,6 @@ class KmlService {
           });
         });
       });
-
-      // LookAt for camera positioning
-      _buildLookAt(
-        builder,
-        latitude: language.latitude,
-        longitude: language.longitude,
-      );
     });
   }
 
