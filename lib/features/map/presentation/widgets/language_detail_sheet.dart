@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:global_language_distribution_map/app/theme.dart';
 import 'package:global_language_distribution_map/data/models/language.dart';
+import 'package:global_language_distribution_map/data/services/fly_to_service.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 /// A bottom sheet that displays detailed information about a selected language.
@@ -186,7 +187,52 @@ class LanguageDetailSheet extends StatelessWidget {
                   ],
 
                   // Future action buttons placeholder
-                  // TODO: Add "View on Liquid Galaxy", "Export KML", "Add to Tour"
+                  const SizedBox(height: 20),
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton.icon(
+                      onPressed: () async {
+                        try {
+                          await FlyToService.saveFlyToKml(
+                            name: language.name,
+                            latitude: language.latitude,
+                            longitude: language.longitude,
+                          );
+                          if (context.mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text('Saved FlyTo KML for ${language.name}'),
+                                duration: const Duration(seconds: 2),
+                              ),
+                            );
+                          }
+                        } catch (e) {
+                          if (context.mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text('Failed to save FlyTo KML: $e'),
+                                duration: const Duration(seconds: 2),
+                              ),
+                            );
+                          }
+                        }
+                      },
+                      icon: const Icon(Icons.flight_takeoff_rounded),
+                      label: Text(
+                        'Fly To Language',
+                        style: GoogleFonts.inter(
+                          fontWeight: FontWeight.w600,
+                          fontSize: 14,
+                        ),
+                      ),
+                      style: ElevatedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                    ),
+                  ),
                 ],
               ),
             ),

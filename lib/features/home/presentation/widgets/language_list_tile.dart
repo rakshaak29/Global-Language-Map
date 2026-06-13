@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:global_language_distribution_map/app/theme.dart';
 import 'package:global_language_distribution_map/core/constants/app_constants.dart';
 import 'package:global_language_distribution_map/data/models/language.dart';
+import 'package:global_language_distribution_map/data/services/fly_to_service.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 /// A list tile displaying a language's key information.
@@ -153,7 +154,7 @@ class LanguageListTile extends StatelessWidget {
                   const SizedBox(height: 12),
 
                   // Coordinate info
-                  if (language.hasCoordinates)
+                  if (language.hasCoordinates) ...[
                     Row(
                       children: [
                         Icon(
@@ -180,6 +181,55 @@ class LanguageListTile extends StatelessWidget {
                         ),
                       ],
                     ),
+                    const SizedBox(height: 12),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: [
+                        OutlinedButton.icon(
+                          onPressed: () async {
+                            try {
+                              await FlyToService.saveFlyToKml(
+                                name: language.name,
+                                latitude: language.latitude,
+                                longitude: language.longitude,
+                              );
+                              if (context.mounted) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text('Saved FlyTo KML for ${language.name}'),
+                                    duration: const Duration(seconds: 2),
+                                  ),
+                                );
+                              }
+                            } catch (e) {
+                              if (context.mounted) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text('Failed to save FlyTo KML: $e'),
+                                    duration: const Duration(seconds: 2),
+                                  ),
+                                );
+                              }
+                            }
+                          },
+                          icon: const Icon(Icons.flight_takeoff_rounded, size: 16),
+                          label: Text(
+                            'Fly To Language',
+                            style: GoogleFonts.inter(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          style: OutlinedButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
                 ],
               ],
             ),
