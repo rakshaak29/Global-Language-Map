@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 ///
 /// Manages theme mode preference.
 class SettingsViewModel extends ChangeNotifier {
-  ThemeMode _themeMode = ThemeMode.dark;
+  ThemeMode _themeMode = ThemeMode.light;
 
   /// The current theme mode.
   ThemeMode get themeMode => _themeMode;

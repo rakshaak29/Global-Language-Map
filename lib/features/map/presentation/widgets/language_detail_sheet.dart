@@ -1,12 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:global_language_distribution_map/app/theme.dart';
 import 'package:global_language_distribution_map/data/models/language.dart';
+import 'package:global_language_distribution_map/data/services/tts_service.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 /// A compact flashcard that displays language info in the bottom-right corner.
 ///
-/// Shows language name, family, endangerment status, country, and coordinates
-/// in a small, non-intrusive card so the map remains fully visible.
+/// Includes TTS (text-to-speech) that automatically reads out the language
+/// details when displayed, with a button to replay or stop the audio.
 class LanguageDetailSheet extends StatefulWidget {
   final Language language;
   final VoidCallback? onClose;
@@ -28,6 +29,8 @@ class _LanguageDetailSheetState extends State<LanguageDetailSheet>
   late final AnimationController _animController;
   late final Animation<Offset> _slideAnimation;
   late final Animation<double> _fadeAnimation;
+  final TtsService _tts = TtsService();
+  bool _isSpeaking = false;
 
   @override
   void initState() {
@@ -47,10 +50,52 @@ class _LanguageDetailSheetState extends State<LanguageDetailSheet>
       CurvedAnimation(parent: _animController, curve: Curves.easeOut),
     );
     _animController.forward();
+
+    // Auto-speak when card appears
+    _speakLanguageInfo();
+  }
+
+  @override
+  void didUpdateWidget(LanguageDetailSheet oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.language.id != widget.language.id) {
+      _speakLanguageInfo();
+    }
+  }
+
+  Future<void> _speakLanguageInfo() async {
+    final text = TtsService.buildLanguageDescription(
+      name: widget.language.name,
+      family: widget.language.languageFamily,
+      endangeredStatus: widget.language.endangeredStatus,
+      countryRegion: widget.language.countryRegion,
+      latitude: widget.language.latitude,
+      longitude: widget.language.longitude,
+    );
+
+    setState(() => _isSpeaking = true);
+    await _tts.speak(text);
+
+    // Poll briefly for completion since TTS callbacks may be async
+    Future.delayed(const Duration(seconds: 1), () {
+      if (mounted) {
+        setState(() => _isSpeaking = _tts.isSpeaking);
+      }
+    });
+  }
+
+  Future<void> _toggleSpeech() async {
+    if (_isSpeaking) {
+      await _tts.stop();
+      if (mounted) setState(() => _isSpeaking = false);
+    } else {
+      await _speakLanguageInfo();
+    }
   }
 
   @override
   void dispose() {
+    _tts.stop();
     _animController.dispose();
     super.dispose();
   }
@@ -66,17 +111,17 @@ class _LanguageDetailSheetState extends State<LanguageDetailSheet>
       child: FadeTransition(
         opacity: _fadeAnimation,
         child: Container(
-          width: 280,
+          width: 290,
           decoration: BoxDecoration(
-            color: colorScheme.surfaceContainer.withValues(alpha: 0.95),
+            color: colorScheme.surfaceContainer.withValues(alpha: 0.97),
             borderRadius: BorderRadius.circular(16),
             border: Border.all(
-              color: colorScheme.outlineVariant.withValues(alpha: 0.4),
+              color: colorScheme.outlineVariant.withValues(alpha: 0.5),
             ),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withValues(alpha: 0.25),
-                blurRadius: 16,
+                color: Colors.black.withValues(alpha: 0.12),
+                blurRadius: 20,
                 offset: const Offset(0, 4),
               ),
             ],
@@ -85,9 +130,9 @@ class _LanguageDetailSheetState extends State<LanguageDetailSheet>
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Header: name, family, close button
+              // Header: name, family, close & TTS buttons
               Padding(
-                padding: const EdgeInsets.fromLTRB(14, 12, 8, 0),
+                padding: const EdgeInsets.fromLTRB(14, 12, 6, 0),
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -119,13 +164,45 @@ class _LanguageDetailSheetState extends State<LanguageDetailSheet>
                         ],
                       ),
                     ),
+                    // TTS button
                     SizedBox(
                       width: 30,
                       height: 30,
                       child: IconButton(
-                        onPressed: widget.onClose,
+                        onPressed: _toggleSpeech,
                         padding: EdgeInsets.zero,
-                        iconSize: 18,
+                        iconSize: 16,
+                        icon: Icon(
+                          _isSpeaking
+                              ? Icons.volume_off_rounded
+                              : Icons.volume_up_rounded,
+                          color: _isSpeaking
+                              ? colorScheme.primary
+                              : colorScheme.onSurfaceVariant,
+                        ),
+                        tooltip: _isSpeaking ? 'Stop reading' : 'Read aloud',
+                        style: IconButton.styleFrom(
+                          backgroundColor: _isSpeaking
+                              ? colorScheme.primary.withValues(alpha: 0.1)
+                              : colorScheme.surfaceContainerHigh,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 4),
+                    // Close button
+                    SizedBox(
+                      width: 30,
+                      height: 30,
+                      child: IconButton(
+                        onPressed: () {
+                          _tts.stop();
+                          widget.onClose?.call();
+                        },
+                        padding: EdgeInsets.zero,
+                        iconSize: 16,
                         icon: Icon(
                           Icons.close_rounded,
                           color: colorScheme.onSurfaceVariant,
@@ -151,7 +228,7 @@ class _LanguageDetailSheetState extends State<LanguageDetailSheet>
                   padding:
                       const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                   decoration: BoxDecoration(
-                    color: endangermentColor.withValues(alpha: 0.15),
+                    color: endangermentColor.withValues(alpha: 0.12),
                     borderRadius: BorderRadius.circular(12),
                     border: Border.all(
                       color: endangermentColor.withValues(alpha: 0.3),
@@ -234,7 +311,7 @@ class _LanguageDetailSheetState extends State<LanguageDetailSheet>
 
               const SizedBox(height: 10),
 
-              // Fly to button
+              // Action buttons row
               Padding(
                 padding: const EdgeInsets.fromLTRB(14, 0, 14, 12),
                 child: SizedBox(
