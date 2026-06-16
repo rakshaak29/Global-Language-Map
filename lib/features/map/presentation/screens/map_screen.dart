@@ -355,13 +355,13 @@ class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
             ),
           ),
 
-          // ─── Selected Language Detail Sheet ─────────────────────
+          // ─── Selected Language Detail Flashcard (bottom-right) ────
           if (viewModel.selectedLanguage != null)
             Positioned(
-              left: 0,
-              right: 0,
-              bottom: 0,
+              right: 12,
+              bottom: 12,
               child: LanguageDetailSheet(
+                key: ValueKey(viewModel.selectedLanguage!.id),
                 language: viewModel.selectedLanguage!,
                 onClose: viewModel.clearSelection,
                 onFlyTo: () {

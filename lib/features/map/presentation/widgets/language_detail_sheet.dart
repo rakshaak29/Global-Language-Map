@@ -3,16 +3,11 @@ import 'package:global_language_distribution_map/app/theme.dart';
 import 'package:global_language_distribution_map/data/models/language.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-/// A bottom sheet that displays detailed information about a selected language.
+/// A compact flashcard that displays language info in the bottom-right corner.
 ///
-/// Shows language name, family, country/region, endangerment status with
-/// color-coded badge, coordinates, and description.
-///
-/// Designed to be modular — future versions can add:
-/// - "View on Liquid Galaxy" button
-/// - "Export KML" action
-/// - "Add to Tour" action
-class LanguageDetailSheet extends StatelessWidget {
+/// Shows language name, family, endangerment status, country, and coordinates
+/// in a small, non-intrusive card so the map remains fully visible.
+class LanguageDetailSheet extends StatefulWidget {
   final Language language;
   final VoidCallback? onClose;
   final VoidCallback? onFlyTo;
@@ -25,243 +20,249 @@ class LanguageDetailSheet extends StatelessWidget {
   });
 
   @override
+  State<LanguageDetailSheet> createState() => _LanguageDetailSheetState();
+}
+
+class _LanguageDetailSheetState extends State<LanguageDetailSheet>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _animController;
+  late final Animation<Offset> _slideAnimation;
+  late final Animation<double> _fadeAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _animController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 300),
+    );
+    _slideAnimation = Tween<Offset>(
+      begin: const Offset(0.3, 0),
+      end: Offset.zero,
+    ).animate(CurvedAnimation(
+      parent: _animController,
+      curve: Curves.easeOutCubic,
+    ));
+    _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(parent: _animController, curve: Curves.easeOut),
+    );
+    _animController.forward();
+  }
+
+  @override
+  void dispose() {
+    _animController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
+    final colorScheme = Theme.of(context).colorScheme;
     final endangermentColor =
-        AppTheme.getEndangermentColor(language.endangeredStatus);
+        AppTheme.getEndangermentColor(widget.language.endangeredStatus);
 
-    return Container(
-      constraints: const BoxConstraints(maxHeight: 380),
-      decoration: BoxDecoration(
-        color: colorScheme.surfaceContainer,
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.3),
-            blurRadius: 20,
-            offset: const Offset(0, -4),
-          ),
-        ],
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          // Drag handle
-          Padding(
-            padding: const EdgeInsets.only(top: 12, bottom: 8),
-            child: Container(
-              width: 40,
-              height: 4,
-              decoration: BoxDecoration(
-                color: colorScheme.onSurfaceVariant.withValues(alpha: 0.3),
-                borderRadius: BorderRadius.circular(2),
-              ),
+    return SlideTransition(
+      position: _slideAnimation,
+      child: FadeTransition(
+        opacity: _fadeAnimation,
+        child: Container(
+          width: 280,
+          decoration: BoxDecoration(
+            color: colorScheme.surfaceContainer.withValues(alpha: 0.95),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: colorScheme.outlineVariant.withValues(alpha: 0.4),
             ),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.25),
+                blurRadius: 16,
+                offset: const Offset(0, 4),
+              ),
+            ],
           ),
-
-          // Content
-          Flexible(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.fromLTRB(20, 4, 20, 24),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Header row: name + close button
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              language.name,
-                              style: GoogleFonts.inter(
-                                fontSize: 20,
-                                fontWeight: FontWeight.w700,
-                                color: colorScheme.onSurface,
-                              ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Header: name, family, close button
+              Padding(
+                padding: const EdgeInsets.fromLTRB(14, 12, 8, 0),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            widget.language.name,
+                            style: GoogleFonts.inter(
+                              fontSize: 15,
+                              fontWeight: FontWeight.w700,
+                              color: colorScheme.onSurface,
                             ),
-                            const SizedBox(height: 4),
-                            Text(
-                              language.languageFamily,
-                              style: GoogleFonts.inter(
-                                fontSize: 14,
-                                fontWeight: FontWeight.w500,
-                                color: colorScheme.primary,
-                              ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            widget.language.languageFamily,
+                            style: GoogleFonts.inter(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w500,
+                              color: colorScheme.primary,
                             ),
-                          ],
-                        ),
-                      ),
-                      if (onClose != null)
-                        IconButton(
-                          onPressed: onClose,
-                          icon: Icon(
-                            Icons.close_rounded,
-                            color: colorScheme.onSurfaceVariant,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
                           ),
-                          style: IconButton.styleFrom(
-                            backgroundColor: colorScheme.surfaceContainerHigh,
-                          ),
-                        ),
-                    ],
-                  ),
-
-                  const SizedBox(height: 16),
-
-                  // Status badge
-                  Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                    decoration: BoxDecoration(
-                      color: endangermentColor.withValues(alpha: 0.15),
-                      borderRadius: BorderRadius.circular(20),
-                      border: Border.all(
-                        color: endangermentColor.withValues(alpha: 0.3),
+                        ],
                       ),
                     ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Container(
-                          width: 8,
-                          height: 8,
-                          decoration: BoxDecoration(
-                            color: endangermentColor,
-                            shape: BoxShape.circle,
+                    SizedBox(
+                      width: 30,
+                      height: 30,
+                      child: IconButton(
+                        onPressed: widget.onClose,
+                        padding: EdgeInsets.zero,
+                        iconSize: 18,
+                        icon: Icon(
+                          Icons.close_rounded,
+                          color: colorScheme.onSurfaceVariant,
+                        ),
+                        style: IconButton.styleFrom(
+                          backgroundColor: colorScheme.surfaceContainerHigh,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
                           ),
                         ),
-                        const SizedBox(width: 8),
-                        Text(
-                          language.endangeredStatus.toUpperCase(),
-                          style: GoogleFonts.inter(
-                            fontSize: 11,
-                            fontWeight: FontWeight.w700,
-                            color: endangermentColor,
-                            letterSpacing: 0.8,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-
-                  const SizedBox(height: 16),
-
-                  // Info rows
-                  _buildInfoRow(
-                    context,
-                    icon: Icons.public_rounded,
-                    label: 'Country / Region',
-                    value: language.countryRegion,
-                  ),
-                  const SizedBox(height: 10),
-                  _buildInfoRow(
-                    context,
-                    icon: Icons.location_on_rounded,
-                    label: 'Coordinates',
-                    value:
-                        '${language.latitude.toStringAsFixed(4)}, ${language.longitude.toStringAsFixed(4)}',
-                  ),
-                  const SizedBox(height: 10),
-                  _buildInfoRow(
-                    context,
-                    icon: Icons.tag_rounded,
-                    label: 'Glottolog ID',
-                    value: language.id,
-                  ),
-
-                  // Description
-                  if (language.description.isNotEmpty) ...[
-                    const SizedBox(height: 16),
-                    Divider(color: colorScheme.outlineVariant),
-                    const SizedBox(height: 12),
-                    Text(
-                      language.description,
-                      style: GoogleFonts.inter(
-                        fontSize: 13,
-                        color: colorScheme.onSurfaceVariant,
-                        height: 1.5,
                       ),
                     ),
                   ],
+                ),
+              ),
 
-                  // Future action buttons placeholder
-                  const SizedBox(height: 20),
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton.icon(
-                      onPressed: () {
-                        if (onFlyTo != null) {
-                          onFlyTo!();
-                        }
-                      },
-                      icon: const Icon(Icons.flight_takeoff_rounded),
-                      label: Text(
-                        'Fly To Language',
-                        style: GoogleFonts.inter(
-                          fontWeight: FontWeight.w600,
-                          fontSize: 14,
+              const SizedBox(height: 8),
+
+              // Status badge
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 14),
+                child: Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                  decoration: BoxDecoration(
+                    color: endangermentColor.withValues(alpha: 0.15),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: endangermentColor.withValues(alpha: 0.3),
+                    ),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Container(
+                        width: 6,
+                        height: 6,
+                        decoration: BoxDecoration(
+                          color: endangermentColor,
+                          shape: BoxShape.circle,
                         ),
                       ),
-                      style: ElevatedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(vertical: 14),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
+                      const SizedBox(width: 6),
+                      Text(
+                        widget.language.endangeredStatus.toUpperCase(),
+                        style: GoogleFonts.inter(
+                          fontSize: 9,
+                          fontWeight: FontWeight.w700,
+                          color: endangermentColor,
+                          letterSpacing: 0.6,
                         ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+
+              const SizedBox(height: 10),
+
+              // Compact info: Country & Coordinates
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 14),
+                child: Row(
+                  children: [
+                    Icon(Icons.public_rounded,
+                        size: 14,
+                        color: colorScheme.onSurfaceVariant
+                            .withValues(alpha: 0.5)),
+                    const SizedBox(width: 6),
+                    Expanded(
+                      child: Text(
+                        widget.language.countryRegion,
+                        style: GoogleFonts.inter(
+                          fontSize: 12,
+                          color: colorScheme.onSurface,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              const SizedBox(height: 4),
+
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 14),
+                child: Row(
+                  children: [
+                    Icon(Icons.location_on_rounded,
+                        size: 14,
+                        color: colorScheme.onSurfaceVariant
+                            .withValues(alpha: 0.5)),
+                    const SizedBox(width: 6),
+                    Text(
+                      '${widget.language.latitude.toStringAsFixed(2)}, ${widget.language.longitude.toStringAsFixed(2)}',
+                      style: GoogleFonts.inter(
+                        fontSize: 12,
+                        color: colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              const SizedBox(height: 10),
+
+              // Fly to button
+              Padding(
+                padding: const EdgeInsets.fromLTRB(14, 0, 14, 12),
+                child: SizedBox(
+                  width: double.infinity,
+                  height: 32,
+                  child: ElevatedButton.icon(
+                    onPressed: widget.onFlyTo,
+                    icon: const Icon(Icons.flight_takeoff_rounded, size: 14),
+                    label: Text(
+                      'Fly To',
+                      style: GoogleFonts.inter(
+                        fontWeight: FontWeight.w600,
+                        fontSize: 12,
+                      ),
+                    ),
+                    style: ElevatedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(horizontal: 12),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10),
                       ),
                     ),
                   ),
-                ],
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildInfoRow(
-    BuildContext context, {
-    required IconData icon,
-    required String label,
-    required String value,
-  }) {
-    final colorScheme = Theme.of(context).colorScheme;
-
-    return Row(
-      children: [
-        Icon(
-          icon,
-          size: 18,
-          color: colorScheme.onSurfaceVariant.withValues(alpha: 0.6),
-        ),
-        const SizedBox(width: 10),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                label,
-                style: GoogleFonts.inter(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w500,
-                  color: colorScheme.onSurfaceVariant.withValues(alpha: 0.6),
-                ),
-              ),
-              Text(
-                value,
-                style: GoogleFonts.inter(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w500,
-                  color: colorScheme.onSurface,
                 ),
               ),
             ],
           ),
         ),
-      ],
+      ),
     );
   }
 }
