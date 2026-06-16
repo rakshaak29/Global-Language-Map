@@ -72,6 +72,17 @@ class _ScaffoldWithNavBar extends StatelessWidget {
 GoRouter createRouter() {
   return GoRouter(
     initialLocation: RoutePaths.splash,
+    redirect: (context, state) {
+      final path = state.uri.path;
+
+      // If the browser lands on a deep link (not splash), skip splash since
+      // data is loaded eagerly in main(). Only redirect bare "/" to home.
+      if (path == '/') {
+        return RoutePaths.home;
+      }
+
+      return null; // No redirect
+    },
     routes: [
       GoRoute(
         path: RoutePaths.splash,

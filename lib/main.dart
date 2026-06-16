@@ -7,10 +7,14 @@ import 'package:global_language_distribution_map/features/map/presentation/view_
 import 'package:global_language_distribution_map/features/settings/presentation/view_models/settings_view_model.dart';
 import 'package:provider/provider.dart';
 
-void main() {
+void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   final languageRepository = LanguageRepository();
+
+  // Load data eagerly so it's available regardless of which route
+  // the browser lands on (e.g., after a page refresh on /home or /map).
+  await languageRepository.loadData();
 
   runApp(
     MultiProvider(

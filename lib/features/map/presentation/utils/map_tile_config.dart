@@ -27,8 +27,8 @@ class MapTileConfig {
   static const String osmAttribution =
       '&copy; OpenStreetMap contributors';
 
-  /// Returns the appropriate tile URL for the given brightness.
+  /// Returns the standard map tile URL (normal map style, like Google Maps).
   static String getTileUrl(bool isDarkMode) {
-    return isDarkMode ? darkTileUrl : lightTileUrl;
+    return osmTileUrl;
   }
 }
