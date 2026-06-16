@@ -17,14 +17,58 @@ class TtsService {
 
   bool get isSpeaking => _isSpeaking;
 
-  /// Initialize the TTS engine with default settings.
+  /// Initialize the TTS engine with soothing voice settings.
+  ///
+  /// Uses a slightly lower pitch and moderate-fast rate for a calm,
+  /// clear delivery similar to AI assistant voices.
   Future<void> initialize() async {
     if (_isInitialized) return;
 
-    await _flutterTts.setLanguage('en-US');
-    await _flutterTts.setSpeechRate(0.45);
+    // Use British English for a smoother, more polished accent
+    await _flutterTts.setLanguage('en-GB');
+
+    // Faster rate for natural conversational pace (0.5 = default, 0.55 = slightly faster)
+    await _flutterTts.setSpeechRate(0.55);
+
     await _flutterTts.setVolume(1.0);
-    await _flutterTts.setPitch(1.0);
+
+    // Slightly lower pitch for a warmer, more soothing tone
+    await _flutterTts.setPitch(0.9);
+
+    // On web (Chrome), try to select the smoothest available voice
+    // "Google UK English Female" is the closest to a soothing AI voice
+    try {
+      final voices = await _flutterTts.getVoices;
+      if (voices != null && voices is List) {
+        // Prefer Google UK English Female > Google US English > any en voice
+        final preferredNames = [
+          'Google UK English Female',
+          'Google US English',
+          'Microsoft Zira',
+          'Samantha',
+        ];
+
+        Map<String, dynamic>? bestVoice;
+        for (final preferred in preferredNames) {
+          for (final voice in voices) {
+            if (voice is Map && voice['name']?.toString().contains(preferred) == true) {
+              bestVoice = Map<String, dynamic>.from(voice);
+              break;
+            }
+          }
+          if (bestVoice != null) break;
+        }
+
+        if (bestVoice != null) {
+          await _flutterTts.setVoice({
+            'name': bestVoice['name'].toString(),
+            'locale': bestVoice['locale']?.toString() ?? 'en-GB',
+          });
+        }
+      }
+    } catch (_) {
+      // Voice selection is best-effort; fall back to default
+    }
 
     _flutterTts.setStartHandler(() {
       _isSpeaking = true;
