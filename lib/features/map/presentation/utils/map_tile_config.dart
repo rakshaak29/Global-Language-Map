@@ -1,13 +1,16 @@
-/// Map tile configuration for dark and light themes.
+/// Map tile configuration.
 ///
 /// Uses OpenStreetMap-compatible tile providers that don't require API keys.
-/// This keeps the architecture open and KML-friendly — the tile layer is
-/// just a visual base, not a proprietary dependency.
+/// CartoDB Voyager provides a colorful, Google Maps-like appearance.
 class MapTileConfig {
   MapTileConfig._();
 
-  /// CartoDB Dark Matter — matches the app's dark indigo/violet theme.
-  /// Note: flutter_map v7 removed subdomains — use direct URL.
+  /// CartoDB Voyager — colorful, Google Maps-like style with streets,
+  /// terrain colors, and labels. Works with retina mode.
+  static const String voyagerTileUrl =
+      'https://basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png';
+
+  /// CartoDB Dark Matter — dark theme alternative.
   static const String darkTileUrl =
       'https://basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png';
 
@@ -27,8 +30,9 @@ class MapTileConfig {
   static const String osmAttribution =
       '&copy; OpenStreetMap contributors';
 
-  /// Returns the standard map tile URL (normal map style, like Google Maps).
+  /// Returns the colorful Voyager tile URL (Google Maps-like appearance).
+  /// Always uses Voyager regardless of theme for a familiar map look.
   static String getTileUrl(bool isDarkMode) {
-    return osmTileUrl;
+    return voyagerTileUrl;
   }
 }
