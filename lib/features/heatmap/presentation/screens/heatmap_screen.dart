@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:flutter_map/flutter_map.dart';
+import 'package:latlong2/latlong.dart';
 import 'package:global_language_distribution_map/app/theme.dart';
 import 'package:global_language_distribution_map/core/constants/app_constants.dart';
 
@@ -66,24 +68,61 @@ class _HeatmapScreenState extends State<HeatmapScreen> {
             if (_showHeatmap) ...[
               Container(
                 margin: const EdgeInsets.symmetric(horizontal: 16),
-                height: 200,
+                height: 250,
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(16),
-                  gradient: const LinearGradient(
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                    colors: [Color(0xFF0D2B12), Color(0xFF1B5E20)],
-                  ),
+                  border: Border.all(color: colorScheme.outlineVariant),
                 ),
                 child: ClipRRect(
                   borderRadius: BorderRadius.circular(16),
                   child: Stack(
                     children: [
-                      // Simulated heatmap with gradient dots
-                      ..._buildSimulatedHeatmap(),
-                      // Overlay grid
-                      Positioned.fill(
-                        child: CustomPaint(painter: _GridPainter()),
+                      FlutterMap(
+                        options: const MapOptions(
+                          initialCenter: LatLng(10, 40),
+                          initialZoom: 0.5,
+                          interactionOptions: InteractionOptions(
+                            flags: InteractiveFlag.all & ~InteractiveFlag.rotate,
+                          ),
+                        ),
+                        children: [
+                          TileLayer(
+                            urlTemplate: 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
+                            subdomains: const ['a', 'b', 'c', 'd'],
+                          ),
+                          MarkerLayer(
+                            markers: hotspots.map((spot) {
+                              final lat = spot['lat'] as double;
+                              final lng = spot['lng'] as double;
+                              final count = spot['count'] as int;
+                              
+                              Color color = const Color(0xFFFF5722);
+                              if (count < 300) color = const Color(0xFF2E7D32);
+                              else if (count < 500) color = const Color(0xFFFFC107);
+                              
+                              double size = 40.0 + (count / 20.0);
+                              if (size > 100) size = 100;
+                              
+                              return Marker(
+                                point: LatLng(lat, lng),
+                                width: size,
+                                height: size,
+                                child: Container(
+                                  decoration: BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    gradient: RadialGradient(
+                                      colors: [
+                                        color.withValues(alpha: 0.8),
+                                        color.withValues(alpha: 0.3),
+                                        Colors.transparent,
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              );
+                            }).toList(),
+                          ),
+                        ],
                       ),
                       // Legend
                       Positioned(
@@ -131,38 +170,6 @@ class _HeatmapScreenState extends State<HeatmapScreen> {
     );
   }
 
-  List<Widget> _buildSimulatedHeatmap() {
-    // Simulated colored blobs for heatmap effect
-    return [
-      _blob(0.1, 0.4, 80, const Color(0xFFFF5722)),   // Papua New Guinea
-      _blob(0.25, 0.45, 60, const Color(0xFFFF9800)),  // West Africa
-      _blob(0.65, 0.3, 50, const Color(0xFFFF9800)),   // SE Asia
-      _blob(0.55, 0.4, 45, const Color(0xFFFFC107)),   // South Asia
-      _blob(0.3, 0.5, 40, const Color(0xFFFFC107)),    // Central Africa
-      _blob(0.2, 0.65, 35, const Color(0xFFFFEB3B)),   // Amazon
-    ];
-  }
-
-  Widget _blob(double x, double y, double size, Color color) {
-    return Positioned(
-      left: x * 300, // approximate, will be relative
-      top: y * 200,
-      child: Container(
-        width: size,
-        height: size,
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          gradient: RadialGradient(
-            colors: [
-              color.withValues(alpha: 0.8),
-              color.withValues(alpha: 0.3),
-              Colors.transparent,
-            ],
-          ),
-        ),
-      ),
-    );
-  }
 }
 
 class _HeatmapLegend extends StatelessWidget {
@@ -311,23 +318,3 @@ class _HotspotTile extends StatelessWidget {
   }
 }
 
-class _GridPainter extends CustomPainter {
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = Colors.white.withValues(alpha: 0.05)
-      ..strokeWidth = 0.5;
-
-    // Vertical lines
-    for (double x = 0; x < size.width; x += 30) {
-      canvas.drawLine(Offset(x, 0), Offset(x, size.height), paint);
-    }
-    // Horizontal lines
-    for (double y = 0; y < size.height; y += 30) {
-      canvas.drawLine(Offset(0, y), Offset(size.width, y), paint);
-    }
-  }
-
-  @override
-  bool shouldRepaint(_GridPainter old) => false;
-}
