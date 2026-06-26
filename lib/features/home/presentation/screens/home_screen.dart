@@ -18,7 +18,7 @@ class HomeScreen extends StatelessWidget {
     final vm = context.watch<HomeViewModel>();
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF4F6F4),
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: CustomScrollView(
         slivers: [
           // ─── Curved Green Header ───────────────────────────────────
@@ -45,22 +45,22 @@ class HomeScreen extends StatelessWidget {
                 style: GoogleFonts.inter(
                   fontSize: 12,
                   fontWeight: FontWeight.w700,
-                  color: const Color(0xFF52634F),
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
                   letterSpacing: 1.5,
                 ),
               ),
             ),
           ),
 
-          // ─── 2x2 Explore Grid ──────────────────────────────────────
+          // ─── Explore Grid ──────────────────────────────────────
           SliverPadding(
             padding: const EdgeInsets.fromLTRB(16, 0, 16, 32),
             sliver: SliverGrid(
-              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 2,
+              gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
+                maxCrossAxisExtent: 220,
                 crossAxisSpacing: 12,
                 mainAxisSpacing: 12,
-                childAspectRatio: 0.9,
+                mainAxisExtent: 160,
               ),
               delegate: SliverChildListDelegate([
                 _ExploreCard(
@@ -69,7 +69,7 @@ class HomeScreen extends StatelessWidget {
                   icon: Icons.map_rounded,
                   countLabel: '${_formatCount(vm.mappableCount)}',
                   countSublabel: 'Languages',
-                  gradientColors: const [Color(0xFF2E7D32), Color(0xFF43A047)],
+                  accentColor: const Color(0xFF2E7D32),
                   onTap: () => context.go(RoutePaths.map),
                 ),
                 _ExploreCard(
@@ -78,7 +78,7 @@ class HomeScreen extends StatelessWidget {
                   icon: Icons.language_rounded,
                   countLabel: '${vm.totalFamilies}',
                   countSublabel: 'Families',
-                  gradientColors: const [Color(0xFF00695C), Color(0xFF26A69A)],
+                  accentColor: const Color(0xFF00695C),
                   onTap: () => context.go(RoutePaths.families),
                 ),
                 _ExploreCard(
@@ -87,7 +87,7 @@ class HomeScreen extends StatelessWidget {
                   icon: Icons.whatshot_rounded,
                   countLabel: 'Top 5',
                   countSublabel: 'Hotspots',
-                  gradientColors: const [Color(0xFFE65100), Color(0xFFFF8F00)],
+                  accentColor: const Color(0xFFE65100),
                   onTap: () => context.push(RoutePaths.heatmap),
                 ),
                 _ExploreCard(
@@ -96,7 +96,7 @@ class HomeScreen extends StatelessWidget {
                   icon: Icons.warning_rounded,
                   countLabel: '${_formatCount(vm.endangeredCount)}+',
                   countSublabel: 'At Risk',
-                  gradientColors: const [Color(0xFFC62828), Color(0xFFEF5350)],
+                  accentColor: const Color(0xFFC62828),
                   onTap: () => context.push(RoutePaths.endangered),
                 ),
               ]),
@@ -355,7 +355,7 @@ class _ExploreCard extends StatelessWidget {
   final IconData icon;
   final String countLabel;
   final String countSublabel;
-  final List<Color> gradientColors;
+  final Color accentColor;
   final VoidCallback onTap;
 
   const _ExploreCard({
@@ -364,86 +364,89 @@ class _ExploreCard extends StatelessWidget {
     required this.icon,
     required this.countLabel,
     required this.countSublabel,
-    required this.gradientColors,
+    required this.accentColor,
     required this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.all(14),
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: gradientColors,
-          ),
-          borderRadius: BorderRadius.circular(16),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Top: icon + count
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.2),
-                    borderRadius: BorderRadius.circular(10),
+    return Card(
+      clipBehavior: Clip.antiAlias,
+      elevation: 0,
+      margin: EdgeInsets.zero,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+        side: BorderSide(
+            color: Theme.of(context).colorScheme.outlineVariant, width: 1),
+      ),
+      color: Theme.of(context).cardTheme.color,
+      child: InkWell(
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.all(14),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Top: icon + count
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: accentColor.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Icon(icon, color: accentColor, size: 20),
                   ),
-                  child: Icon(icon, color: Colors.white, size: 20),
-                ),
-                const Spacer(),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  children: [
-                    Text(
-                      countLabel,
-                      style: GoogleFonts.inter(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w800,
-                        color: Colors.white,
+                  const Spacer(),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      Text(
+                        countLabel,
+                        style: GoogleFonts.inter(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w800,
+                          color: Theme.of(context).colorScheme.onSurface,
+                        ),
                       ),
-                    ),
-                    Text(
-                      countSublabel,
-                      style: GoogleFonts.inter(
-                        fontSize: 11,
-                        color: Colors.white.withValues(alpha: 0.8),
+                      Text(
+                        countSublabel,
+                        style: GoogleFonts.inter(
+                          fontSize: 11,
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
+                ],
+              ),
+
+              const Spacer(),
+
+              // Bottom: title + subtitle
+              Text(
+                title,
+                style: GoogleFonts.inter(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w700,
+                  color: Theme.of(context).colorScheme.onSurface,
                 ),
-              ],
-            ),
-
-            const Spacer(),
-
-            // Bottom: title + subtitle
-            Text(
-              title,
-              style: GoogleFonts.inter(
-                fontSize: 15,
-                fontWeight: FontWeight.w700,
-                color: Colors.white,
+                maxLines: 2,
               ),
-              maxLines: 2,
-            ),
-            const SizedBox(height: 4),
-            Text(
-              subtitle,
-              style: GoogleFonts.inter(
-                fontSize: 11,
-                color: Colors.white.withValues(alpha: 0.8),
+              const SizedBox(height: 4),
+              Text(
+                subtitle,
+                style: GoogleFonts.inter(
+                  fontSize: 11,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
               ),
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
