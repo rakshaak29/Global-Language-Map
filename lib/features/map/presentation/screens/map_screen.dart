@@ -7,7 +7,6 @@ import 'package:global_language_distribution_map/features/map/presentation/utils
 import 'package:global_language_distribution_map/features/map/presentation/utils/marker_builder.dart';
 import 'package:global_language_distribution_map/features/map/presentation/view_models/map_view_model.dart';
 import 'package:global_language_distribution_map/features/map/presentation/widgets/language_detail_sheet.dart';
-import 'package:global_language_distribution_map/features/map/presentation/widgets/map_search_bar.dart';
 import 'package:global_language_distribution_map/app/theme.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:go_router/go_router.dart';
@@ -37,6 +36,7 @@ class MapScreen extends StatefulWidget {
 class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
   final MapController _mapController = MapController();
   String? _lastAnimatedLanguageId;
+  String _currentTileUrl = MapTileConfig.voyagerTileUrl;
 
   Color _stringToFlutterColor(String str) {
     int hash = 0;
@@ -115,7 +115,6 @@ class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
-    final isDark = theme.brightness == Brightness.dark;
     final viewModel = context.watch<MapViewModel>();
 
     final selected = viewModel.selectedLanguage;
@@ -212,7 +211,7 @@ class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
             children: [
               // Tile layer
               TileLayer(
-                urlTemplate: MapTileConfig.getTileUrl(isDark),
+                urlTemplate: _currentTileUrl,
                 userAgentPackageName:
                     'com.example.global_language_distribution_map',
                 maxZoom: 19,
@@ -271,102 +270,170 @@ class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
             ],
           ),
 
-          // ─── Top Controls ──────────────────────────────────────
+          // ─── Search & Filter Floating Card at Top ─────────────────
           SafeArea(
-            child: Column(
-              children: [
-                // App bar area
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(12, 8, 12, 0),
-                  child: Row(
-                    children: [
-                      // Title chip
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 14, vertical: 8),
-                        decoration: BoxDecoration(
-                          color: colorScheme.surfaceContainer
-                              .withValues(alpha: 0.92),
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(
-                              color: colorScheme.outlineVariant
-                                  .withValues(alpha: 0.5)),
+            child: Align(
+              alignment: Alignment.topCenter,
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      height: 52,
+                      decoration: BoxDecoration(
+                        color: colorScheme.surfaceContainer.withValues(alpha: 0.96),
+                        borderRadius: BorderRadius.circular(26), // pill-shaped search bar
+                        border: Border.all(
+                          color: colorScheme.outlineVariant.withValues(alpha: 0.8),
                         ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(
-                              Icons.map_rounded,
-                              size: 18,
-                              color: colorScheme.primary,
-                            ),
-                            const SizedBox(width: 8),
-                            Text(
-                              '${_formatCount(viewModel.visibleCount)} languages',
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.1),
+                            blurRadius: 10,
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
+                      ),
+                      child: Row(
+                        children: [
+                          const SizedBox(width: 16),
+                          Icon(
+                            Icons.search_rounded,
+                            color: colorScheme.onSurfaceVariant,
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: TextField(
+                              onChanged: (val) {
+                                if (!viewModel.isSearchVisible && val.isNotEmpty) {
+                                  viewModel.toggleSearch();
+                                }
+                                viewModel.updateSearchQuery(val);
+                              },
                               style: GoogleFonts.inter(
-                                fontSize: 13,
-                                fontWeight: FontWeight.w600,
+                                fontSize: 15,
                                 color: colorScheme.onSurface,
                               ),
+                              decoration: InputDecoration(
+                                hintText: 'Search languages, families...',
+                                hintStyle: GoogleFonts.inter(
+                                  color: colorScheme.onSurfaceVariant,
+                                  fontSize: 14,
+                                ),
+                                border: InputBorder.none,
+                                isDense: true,
+                              ),
+                            ),
+                          ),
+                          // KML Export Button
+                          IconButton(
+                            icon: const Icon(Icons.file_download_outlined),
+                            color: colorScheme.onSurfaceVariant,
+                            tooltip: 'Export KML',
+                            onPressed: () => context.push(RoutePaths.kmlExport),
+                          ),
+                          // Filter toggle button
+                          IconButton(
+                            icon: Icon(
+                              viewModel.endangermentFilter != 'all'
+                                  ? Icons.filter_alt_rounded
+                                  : Icons.filter_alt_outlined,
+                            ),
+                            color: viewModel.endangermentFilter != 'all'
+                                ? colorScheme.primary
+                                : colorScheme.onSurfaceVariant,
+                            onPressed: () => _showFilterSheet(context, viewModel),
+                          ),
+                          const SizedBox(width: 8),
+                        ],
+                      ),
+                    ),
+                    
+                    // Search dropdown results
+                    if (viewModel.isSearchVisible && viewModel.searchQuery.isNotEmpty) ...[
+                      const SizedBox(height: 8),
+                      Container(
+                        constraints: const BoxConstraints(maxHeight: 280),
+                        decoration: BoxDecoration(
+                          color: colorScheme.surfaceContainer.withValues(alpha: 0.98),
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(color: colorScheme.outlineVariant),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withValues(alpha: 0.15),
+                              blurRadius: 12,
+                              offset: const Offset(0, 6),
                             ),
                           ],
                         ),
-                      ),
-
-                      const Spacer(),
-
-                      // Filter button
-                      _buildControlButton(
-                        context,
-                        icon: viewModel.endangermentFilter != 'all'
-                            ? Icons.filter_alt_rounded
-                            : Icons.filter_alt_outlined,
-                        isActive: viewModel.endangermentFilter != 'all',
-                        onPressed: () => _showFilterSheet(context, viewModel),
-                      ),
-
-                      const SizedBox(width: 8),
-
-                      // KML Export button
-                      _buildControlButton(
-                        context,
-                        icon: Icons.file_download_outlined,
-                        isActive: false,
-                        onPressed: () => context.push(RoutePaths.kmlExport),
-                      ),
-
-                      const SizedBox(width: 8),
-
-                      // Search button
-                      _buildControlButton(
-                        context,
-                        icon: viewModel.isSearchVisible
-                            ? Icons.search_off_rounded
-                            : Icons.search_rounded,
-                        isActive: viewModel.isSearchVisible,
-                        onPressed: () => viewModel.toggleSearch(),
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(16),
+                          child: viewModel.searchResults.isEmpty
+                              ? Padding(
+                                  padding: const EdgeInsets.all(16),
+                                  child: Center(
+                                    child: Text(
+                                      'No languages found',
+                                      style: GoogleFonts.inter(
+                                        fontSize: 13,
+                                        color: colorScheme.onSurfaceVariant,
+                                      ),
+                                    ),
+                                  ),
+                                )
+                              : ListView.builder(
+                                  shrinkWrap: true,
+                                  padding: const EdgeInsets.symmetric(vertical: 6),
+                                  itemCount: viewModel.searchResults.length,
+                                  itemBuilder: (context, index) {
+                                    final language = viewModel.searchResults[index];
+                                    return ListTile(
+                                      leading: const Icon(Icons.location_on_rounded, color: AppTheme.primaryGreen),
+                                      title: Text(
+                                        language.name,
+                                        style: GoogleFonts.inter(
+                                          fontWeight: FontWeight.w600,
+                                          fontSize: 14,
+                                        ),
+                                      ),
+                                      subtitle: Text(
+                                        '${language.languageFamily} · ${language.countryRegion}',
+                                        style: GoogleFonts.inter(fontSize: 12),
+                                      ),
+                                      onTap: () => _onSearchLanguageSelected(language),
+                                    );
+                                  },
+                                ),
+                        ),
                       ),
                     ],
-                  ),
+                  ],
                 ),
-
-                // Search overlay
-                if (viewModel.isSearchVisible)
-                  MapSearchBar(
-                    searchResults: viewModel.searchResults,
-                    onSearchChanged: viewModel.updateSearchQuery,
-                    onLanguageSelected: _onSearchLanguageSelected,
-                    onClose: viewModel.closeSearch,
-                  ),
-              ],
+              ),
             ),
           ),
 
-          // ─── Selected Language Detail Flashcard (bottom-right) ────
+          // ─── Layer Toggle FAB ─────────────────────────────────
+          Positioned(
+            right: 16,
+            bottom: viewModel.selectedLanguage != null ? 340 : 16,
+            child: FloatingActionButton(
+              heroTag: 'map_layer_fab',
+              backgroundColor: AppTheme.primaryGreen,
+              foregroundColor: Colors.white,
+              shape: const CircleBorder(),
+              onPressed: () => _showLayerDialog(context),
+              child: const Icon(Icons.layers_rounded),
+            ),
+          ),
+
+          // ─── Selected Language Detail Sheet (full-width bottom sheet) ────
           if (viewModel.selectedLanguage != null)
             Positioned(
-              right: 12,
-              bottom: 12,
+              left: 0,
+              right: 0,
+              bottom: 0,
               child: LanguageDetailSheet(
                 key: ValueKey(viewModel.selectedLanguage!.id),
                 language: viewModel.selectedLanguage!,
@@ -403,42 +470,6 @@ class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
     }).toList();
   }
 
-  Widget _buildControlButton(
-    BuildContext context, {
-    required IconData icon,
-    required bool isActive,
-    required VoidCallback onPressed,
-  }) {
-    final colorScheme = Theme.of(context).colorScheme;
-
-    return Material(
-      color: isActive
-          ? colorScheme.primary.withValues(alpha: 0.15)
-          : colorScheme.surfaceContainer.withValues(alpha: 0.92),
-      borderRadius: BorderRadius.circular(12),
-      child: InkWell(
-        onTap: onPressed,
-        borderRadius: BorderRadius.circular(12),
-        child: Container(
-          padding: const EdgeInsets.all(10),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(
-              color: isActive
-                  ? colorScheme.primary.withValues(alpha: 0.3)
-                  : colorScheme.outlineVariant.withValues(alpha: 0.5),
-            ),
-          ),
-          child: Icon(
-            icon,
-            size: 20,
-            color:
-                isActive ? colorScheme.primary : colorScheme.onSurfaceVariant,
-          ),
-        ),
-      ),
-    );
-  }
 
   void _showFilterSheet(BuildContext context, MapViewModel viewModel) {
     final colorScheme = Theme.of(context).colorScheme;
@@ -542,10 +573,80 @@ class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
     );
   }
 
-  String _formatCount(int count) {
-    if (count >= 1000) {
-      return '${(count / 1000).toStringAsFixed(1)}K';
-    }
-    return count.toString();
+  void _showLayerDialog(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: colorScheme.surfaceContainer,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) {
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Map Style',
+                  style: GoogleFonts.inter(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                ListTile(
+                  leading: const Icon(Icons.map_rounded),
+                  title: const Text('Voyager (Default)'),
+                  trailing: _currentTileUrl == MapTileConfig.voyagerTileUrl
+                      ? Icon(Icons.check_circle_rounded, color: AppTheme.primaryGreen)
+                      : null,
+                  onTap: () {
+                    setState(() => _currentTileUrl = MapTileConfig.voyagerTileUrl);
+                    Navigator.pop(context);
+                  },
+                ),
+                ListTile(
+                  leading: const Icon(Icons.wb_sunny_rounded),
+                  title: const Text('Positron (Light)'),
+                  trailing: _currentTileUrl == MapTileConfig.lightTileUrl
+                      ? Icon(Icons.check_circle_rounded, color: AppTheme.primaryGreen)
+                      : null,
+                  onTap: () {
+                    setState(() => _currentTileUrl = MapTileConfig.lightTileUrl);
+                    Navigator.pop(context);
+                  },
+                ),
+                ListTile(
+                  leading: const Icon(Icons.nightlight_round_rounded),
+                  title: const Text('Dark Matter (Dark)'),
+                  trailing: _currentTileUrl == MapTileConfig.darkTileUrl
+                      ? Icon(Icons.check_circle_rounded, color: AppTheme.primaryGreen)
+                      : null,
+                  onTap: () {
+                    setState(() => _currentTileUrl = MapTileConfig.darkTileUrl);
+                    Navigator.pop(context);
+                  },
+                ),
+                ListTile(
+                  leading: const Icon(Icons.public_rounded),
+                  title: const Text('OpenStreetMap'),
+                  trailing: _currentTileUrl == MapTileConfig.osmTileUrl
+                      ? Icon(Icons.check_circle_rounded, color: AppTheme.primaryGreen)
+                      : null,
+                  onTap: () {
+                    setState(() => _currentTileUrl = MapTileConfig.osmTileUrl);
+                    Navigator.pop(context);
+                  },
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
   }
+
 }
