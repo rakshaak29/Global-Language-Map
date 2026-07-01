@@ -3,7 +3,7 @@ import 'package:go_router/go_router.dart';
 import 'package:global_language_distribution_map/app/router.dart';
 import 'package:global_language_distribution_map/app/theme.dart';
 import 'package:global_language_distribution_map/core/constants/app_constants.dart';
-import 'package:global_language_distribution_map/features/settings/presentation/view_models/settings_view_model.dart';
+import 'package:global_language_distribution_map/presentation/settings/view_models/settings_view_model.dart';
 import 'package:provider/provider.dart';
 
 /// The root application widget.

@@ -2,18 +2,19 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:global_language_distribution_map/app/theme.dart';
 import 'package:global_language_distribution_map/data/models/language.dart';
-import 'package:global_language_distribution_map/features/home/presentation/screens/home_screen.dart';
-import 'package:global_language_distribution_map/features/map/presentation/screens/map_screen.dart';
-import 'package:global_language_distribution_map/features/settings/presentation/screens/settings_screen.dart';
-import 'package:global_language_distribution_map/features/splash/presentation/screens/splash_screen.dart';
-import 'package:global_language_distribution_map/features/families/presentation/screens/families_screen.dart';
-import 'package:global_language_distribution_map/features/tours/presentation/screens/tours_screen.dart';
-import 'package:global_language_distribution_map/features/endangered/presentation/screens/endangered_screen.dart';
-import 'package:global_language_distribution_map/features/heatmap/presentation/screens/heatmap_screen.dart';
-import 'package:global_language_distribution_map/features/language_detail/presentation/screens/language_detail_screen.dart';
-import 'package:global_language_distribution_map/features/about/presentation/screens/about_screen.dart';
-import 'package:global_language_distribution_map/features/about/presentation/screens/documentation_screen.dart';
-import 'package:global_language_distribution_map/features/kml_export/presentation/screens/kml_export_screen.dart';
+import 'package:global_language_distribution_map/presentation/home/screens/home_screen.dart';
+import 'package:global_language_distribution_map/presentation/map/screens/map_screen.dart';
+import 'package:global_language_distribution_map/presentation/settings/screens/settings_screen.dart';
+import 'package:global_language_distribution_map/presentation/splash/screens/splash_screen.dart';
+import 'package:global_language_distribution_map/presentation/families/screens/families_screen.dart';
+import 'package:global_language_distribution_map/presentation/tours/screens/tours_screen.dart';
+import 'package:global_language_distribution_map/presentation/endangered/screens/endangered_screen.dart';
+import 'package:global_language_distribution_map/presentation/heatmap/screens/heatmap_screen.dart';
+import 'package:global_language_distribution_map/presentation/language_detail/screens/language_detail_screen.dart';
+import 'package:global_language_distribution_map/presentation/about/screens/about_screen.dart';
+import 'package:global_language_distribution_map/presentation/about/screens/documentation_screen.dart';
+import 'package:global_language_distribution_map/presentation/kml_export/screens/kml_export_screen.dart';
+import 'package:global_language_distribution_map/presentation/chat/screens/chat_screen.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 /// Application route names.
@@ -32,6 +33,7 @@ class RouteNames {
   static const String about = 'about';
   static const String documentation = 'documentation';
   static const String kmlExport = 'kml-export';
+  static const String chat = 'chat';
 }
 
 /// Application route paths.
@@ -50,6 +52,7 @@ class RoutePaths {
   static const String about = '/about';
   static const String documentation = '/documentation';
   static const String kmlExport = '/kml-export';
+  static const String chat = '/chat';
 }
 
 /// The main scaffold with bottom navigation bar (5 tabs).
@@ -221,6 +224,11 @@ GoRouter createRouter() {
         path: RoutePaths.kmlExport,
         name: RouteNames.kmlExport,
         builder: (context, state) => const KmlExportScreen(),
+      ),
+      GoRoute(
+        path: RoutePaths.chat,
+        name: RouteNames.chat,
+        builder: (context, state) => const ChatScreen(),
       ),
       GoRoute(
         path: RoutePaths.endangered,
